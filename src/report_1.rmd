@@ -1,0 +1,117 @@
+---
+title: "Chicken Weights: Portfolio Report 1"
+author: "Ahmed Almohammed"
+output: html_document
+---
+
+> A report to analyze the chicken weights dataset.
+
+We will start by initializing the packages required in this report.
+
+```{R message=FALSE}
+library(tidyverse)
+```
+
+I have completed this report in 3 different parts, namely:
+
+* **Part I: General understanding of the dataset**
+* **Part II: Deeper understanding of the dataset**
+* **Part III: Conclusion statement on the dataset**
+
+## Part I: General understanding of the dataset
+
+```{R collapse=TRUE}
+# import the dataset and store it in the `CWDataset`
+CWDataset  <- ChickWeight
+
+# view the first 6 observations
+head(CWDataset)
+
+# view the summary of the dataset
+summary(CWDataset)
+
+# Plot the dataset to view it (Point Plot)
+ggplot(data=CWDataset, mapping = aes(x=Time, y=weight)) + 
+    geom_point()
+
+# Plot the dataset to view it (Box Plot)
+ggplot(CWDataset, mapping = aes(x=Diet, y=weight)) +
+    stat_boxplot(geom ='errorbar') + 
+    geom_boxplot()
+```
+
+
+## Part II: Deeper understanding of the dataset
+With the above information, we can proceed to exploring the relations between the variables for additional insights.
+
+We will start with grouping the dataset based on the type of `Diet` variable.
+```{R collapse=TRUE}
+# Now, we create a tibble that shows us the details of the chickens
+# when grouped by the diet they were fed on
+CWDataset %>% group_by(Diet) %>% summarise(number_of_chicks = n_distinct(Chick))
+```
+
+We can see that there are 4 types of `Diet` that were tested on a total of 50 `Chick`, with :
+
+* **20 chickens following diet 1**
+* **10 chickens following diet 2**
+* **10 chickens following diet 3**
+* **10 chickens following diet 4**
+
+Now, we group them based on the `Time` variable.
+
+```{R collapse=TRUE}
+CWDataset  %>% group_by(Time)  %>% summarise(number_of_chicks = n_distinct(Chick))
+```
+
+From the above examination, we can see that the `Diet` was for a period of 21 days,
+where at the start there were the full number of `Chick`, total of 50 `Chick`. However, towards the end, we ended up
+with 45 `Chick`! We can also notice a positive correlation between time and weight, where the weight of the `chick` tends to increase
+along the `time` interval.
+
+With this new information, we see that some of the chicks didnt complete the full 21 days, and so
+we need to clean the data from these 5 `Chick` that did not make it to the 21 day.
+
+```{R collapse=TRUE}
+# Filter the chicks
+filtered  <- as_tibble(CWDataset  %>% filter(Time == 21))
+
+# View the list of required chicks
+chick_list <- filtered$Chick
+
+# Make a new dataset with only the required chicks
+CWDataset  <- as_tibble(CWDataset)
+CWDataset_filtered  <- subset(CWDataset, (CWDataset$Chick %in% chick_list))
+
+# Check the result
+CWDataset_filtered  %>% group_by(Time)  %>% summarise(number_of_chicks = n_distinct(Chick))
+```
+
+We are now able to contiue through the process of analyzing the dataset as we cleaned it off from the unrequired data 
+of the 5 `Chick` that didnt complete the specified number of days of the `Diet`
+
+We can now plot our filtered dataset. We will start with a box plot.
+
+```{R collapse=TRUE}
+# Plot a boxplot of the data
+ggplot(CWDataset_filtered, mapping = aes(x=Diet, y=weight)) +
+    stat_boxplot(geom ='errorbar') +
+    geom_boxplot()
+
+# Check the highest weight in the diet groups
+CWDataset_filtered  %>% group_by(Diet)  %>% summarise(max_weight = max(weight))
+```
+
+We notice the following:-
+
+* The median is very low in `Diet1` compared to the other diets.
+* Both `Diet3` and `Diet4` have no outliers.
+* Both `Diet3` and `Diet4` have a high median value compared to `Diet1` and `Diet2`
+
+## Part III: Conclusion
+
+In conclusion, we can sum up the above analysis in the following main points:
+
+> There is a positive linear relationship between `time` and `weight` of the `chick`.
+> As the time passes, the chicks in all diet increase in weight.
+> `Diet3` makes the `chick` fatter quickly, and `Diet1` makes the `chick` fatter slowly.
