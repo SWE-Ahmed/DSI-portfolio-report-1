@@ -1,5 +1,6 @@
 ---
-title: "Chicken Weights: Portfolio Report 1"
+title: "Chicken Weights EDA"
+subtitle: "A report to analyze the chicken weights dataset."
 author: "Ahmed Almohammed"
 output:
   html_document:
@@ -7,10 +8,6 @@ output:
     code_folding: hide
     toc: true
 ---
-
-> A report to analyze the chicken weights dataset.
-
-We will start by initializing the packages required in this report.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -35,28 +32,46 @@ ChickWeight %>%
 ```
 
 
-```{r eval=FALSE}
-ChickWeight %>%
-    head(10) %>% 
-    knitr::kable()
-#%>%
- # kable_styling(bootstrap_options = "striped", full_width = F, position = "left")
+Before we begin, we'll remove any chicks that didn't survive until the end of the study. We'll consider them separately later on.
+
+```{r}
+# Filter the chicks
+ChickWeight  %>% 
+    filter(Time == max(Time)) %>% 
+    pull(Chick) -> chick_list
+
+# Make a new dataset with only the required chicks
+ChickWeight %>% 
+    filter(Chick %in% chick_list) -> ChickWeight_Time21
+    
+
+ChickWeight %>% 
+    filter(!(Chick %in% chick_list)) -> ChickWeight_Not21
 
 ```
 
 
 ```{R collapse=TRUE}
 # view the summary of the dataset
-summary(ChickWeight)
+# summary(ChickWeight)
 
 # Plot the dataset to view it (Point Plot)
-ggplot(data=ChickWeight, mapping = aes(x=Time, y=weight)) + 
-    geom_point()
+ggplot(ChickWeight_Time21, mapping = aes(Time, weight, color = Diet)) + 
+    # geom_point(shape = 16, alpha = 0.5) +
+    geom_line(aes(group = Chick), alpha = 0.5) +
+    facet_grid(. ~ Diet) +
+    stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), color = NA, fill = "black", alpha = 0.25, geom = "ribbon") +
+    stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), color = "black", geom = "line") +
+    scale_x_continuous(breaks = unique(ChickWeight$Time))
+```
 
+
+```{R collapse=TRUE}
 # Plot the dataset to view it (Box Plot)
 ggplot(ChickWeight, mapping = aes(x=Diet, y=weight)) +
     stat_boxplot(geom ='errorbar') + 
-    geom_boxplot()
+    geom_boxplot() +
+    NULL
 ```
 
 
@@ -92,15 +107,8 @@ With this new information, we see that some of the chicks didnt complete the ful
 we need to clean the data from these 5 `Chick` that did not make it to the 21 day.
 
 ```{R collapse=TRUE}
-# Filter the chicks
-filtered  <- as_tibble(ChickWeight  %>% filter(Time == 21))
 
-# View the list of required chicks
-chick_list <- filtered$Chick
 
-# Make a new dataset with only the required chicks
-ChickWeight  <- as_tibble(ChickWeight)
-ChickWeight_filtered  <- subset(ChickWeight, (ChickWeight$Chick %in% chick_list))
 
 # Check the result
 ChickWeight_filtered  %>% group_by(Time)  %>% summarise(number_of_chicks = n_distinct(Chick))
